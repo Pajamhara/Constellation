@@ -32,7 +32,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: "Tableau de bord ${{ github.ref_name }}"
+          releaseName: "Constellation ${{ github.ref_name }}"
           releaseBody: "Installateurs Windows, macOS et Linux (voir les fichiers ci-dessous)."
           releaseDraft: true
           args: ${{ matrix.args }}
