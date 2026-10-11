@@ -34,7 +34,14 @@ export default function Layout() {
   return (
     <div className="min-h-screen md:grid md:grid-cols-[220px_1fr]">
       <aside className="border-b border-line bg-surface px-3 py-3 md:sticky md:top-0 md:h-screen md:border-b-0 md:border-r md:py-6 dark:border-night-line dark:bg-night-surface">
-        <div className="mb-2 hidden px-3 text-sm font-semibold md:block">Constellation</div>
+        <div className="mb-2 hidden items-center gap-2 px-3 text-sm font-semibold md:flex">
+          <svg width="24" height="24" viewBox="0 0 100 100" aria-hidden="true">
+            <rect x=".75" y=".75" width="98.5" height="98.5" rx="22" fill="#14202e" stroke="#7fb0e0" strokeOpacity=".3" strokeWidth="1.5" />
+            <path d="M24 68 40 40 58 56 76 28M58 56 72 76" fill="none" stroke="#7fb0e0" strokeOpacity=".7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            <g fill="#7fb0e0"><circle cx="24" cy="68" r="5" /><circle cx="40" cy="40" r="5" /><circle cx="58" cy="56" r="5" /><circle cx="72" cy="76" r="5" /><circle cx="76" cy="28" r="7" /></g>
+          </svg>
+          Constellation
+        </div>
         <nav className="flex gap-1 overflow-x-auto pr-12 md:flex-col md:pr-0" aria-label="Navigation principale">
           {NAV.map((n) => (
             <NavLink key={n.to} to={n.to} end={n.end} className={link}>
