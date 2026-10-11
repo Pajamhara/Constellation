@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tableau de bord</title>
+    <script>
+      // ===== À REMPLIR : Supabase > Project Settings > API =====
+      window.APP_CONFIG = { supabaseUrl: "https://uuusedqjpqfniemjsmzd.supabase.co/", supabaseAnonKey: "sb_publishable_HV-z85dCmfRmR-RFeK2-LA_TJKhYeEs" };
+    </script>
+    <script>
+      try { if (localStorage.getItem("theme") === "dark" ||
+        (!localStorage.getItem("theme") && matchMedia("(prefers-color-scheme: dark)").matches))
+        document.documentElement.classList.add("dark"); } catch {}
+    </script>
+  </head>
+  <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>
+</html>
