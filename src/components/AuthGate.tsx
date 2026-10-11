@@ -117,7 +117,7 @@ function Gate({ client, children }: { client: SupabaseClient; children: ReactNod
   return (
     <Shell>
       <form onSubmit={submit} className={`${card} w-full max-w-sm space-y-3 p-6`}>
-        <h1 className="text-lg font-semibold">{mode === "reset" ? "Mot de passe oublié" : "Tableau de bord"}</h1>
+        <h1 className="text-lg font-semibold">{mode === "reset" ? "Mot de passe oublié" : "Constellation"}</h1>
         {mode === "reset"
           ? <p className="text-sm text-muted dark:text-night-muted">Saisissez votre e-mail : nous vous envoyons {RESET_BY_CODE ? "un code" : "un lien"} pour choisir un nouveau mot de passe.</p>
           : <div className="flex gap-1">{tab("in", "Connexion")}{tab("up", "Inscription")}</div>}
