@@ -34,7 +34,7 @@ export default function Layout() {
   return (
     <div className="min-h-screen md:grid md:grid-cols-[220px_1fr]">
       <aside className="border-b border-line bg-surface px-3 py-3 md:sticky md:top-0 md:h-screen md:border-b-0 md:border-r md:py-6 dark:border-night-line dark:bg-night-surface">
-        <div className="mb-2 hidden px-3 text-sm font-semibold md:block">Tableau de bord</div>
+        <div className="mb-2 hidden px-3 text-sm font-semibold md:block">Constellation</div>
         <nav className="flex gap-1 overflow-x-auto pr-12 md:flex-col md:pr-0" aria-label="Navigation principale">
           {NAV.map((n) => (
             <NavLink key={n.to} to={n.to} end={n.end} className={link}>
