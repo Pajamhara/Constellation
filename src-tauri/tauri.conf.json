@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Tableau de bord",
+  "productName": "Constellation",
   "version": "0.1.0",
-  "identifier": "fr.tableaudebord.app",
+  "identifier": "fr.constellation.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:5173",
@@ -10,7 +10,7 @@
     "frontendDist": "../dist"
   },
   "app": {
-    "windows": [{ "title": "Tableau de bord", "width": 1100, "height": 760, "minWidth": 380, "minHeight": 560 }],
+    "windows": [{ "title": "Constellation", "width": 1100, "height": 760, "minWidth": 380, "minHeight": 560 }],
     "security": { "csp": null }
   },
   "bundle": {
