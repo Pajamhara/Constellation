@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { PageHeader, ProgressBar, card } from "../components/ui";
 import { useCollection } from "../hooks/useCollection";
 import { formatDate, formatDay, ymd } from "../lib/format";
-import { progressOf } from "../lib/progress";
+import { nextTask, progressOf } from "../lib/progress";
 import { hoursOf, upcomingOccurrences } from "../lib/recurrence";
 import type { CalendarEvent, Idea, Project, Task } from "../types";
 
@@ -72,6 +72,7 @@ export default function Dashboard() {
                   <Link to={`/projets/${p.id}`} className="block">
                     <span className="flex justify-between text-sm"><span className="font-medium">{p.name}</span><span className="tabular-nums text-muted dark:text-night-muted">{progressOf(p, tasks.items)} %</span></span>
                     <span className="mt-1 block"><ProgressBar value={progressOf(p, tasks.items)} /></span>
+                    {nextTask(p, tasks.items) && <span className="mt-1 block truncate text-xs text-muted dark:text-night-muted">Prochaine étape : {nextTask(p, tasks.items)!.title}</span>}
                   </Link>
                 </li>
               ))}
