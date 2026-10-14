@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { EmptyState, PageHeader, ProgressBar, btn, card, input } from "../components/ui";
 import { useCollection } from "../hooks/useCollection";
 import { formatDate, formatDateTime } from "../lib/format";
-import { STATUS_LABEL, progressOf } from "../lib/progress";
+import { STATUS_LABEL, nextTask, progressOf } from "../lib/progress";
 import type { Project, ProjectStatus, Task } from "../types";
 
 type Filter = Exclude<ProjectStatus, "done"> | "all";
@@ -47,6 +47,7 @@ export default function Projects() {
           {current.map((p) => {
             const own = tasks.items.filter((t) => t.projectId === p.id);
             const pct = progressOf(p, tasks.items);
+            const next = nextTask(p, tasks.items);
             return (
               <Link key={p.id} to={`/projets/${p.id}`} className={`${card} block p-4 hover:border-accent dark:hover:border-night-accent`}>
                 <div className="flex items-start justify-between gap-2">
@@ -55,6 +56,13 @@ export default function Projects() {
                 </div>
                 {p.description && <p className="mt-1 line-clamp-2 text-sm text-muted dark:text-night-muted">{p.description}</p>}
                 <div className="mt-3 flex items-center gap-3"><ProgressBar value={pct} /><span className="text-xs tabular-nums">{pct} %</span></div>
+                {own.length > 0 && (
+                  <p className="mt-2 truncate text-xs">
+                    {next
+                      ? <><span className="text-muted dark:text-night-muted">Prochaine étape : </span>{next.title}</>
+                      : <span className="text-muted dark:text-night-muted">Toutes les étapes sont terminées</span>}
+                  </p>
+                )}
                 <p className="mt-2 text-xs text-muted dark:text-night-muted">
                   {own.filter((t) => t.done).length}/{own.length} étapes · modifié le {formatDateTime(p.updatedAt)}
                 </p>
