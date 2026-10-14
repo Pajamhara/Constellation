@@ -11,3 +11,6 @@ export function progressOf(p: Project, tasks: Task[]): number {
   const own = tasks.filter((t) => t.projectId === p.id);
   return own.length ? Math.round((own.filter((t) => t.done).length / own.length) * 100) : 0;
 }
+
+/** Première étape non cochée, dans l'ordre de la liste. */
+export const nextTask = (p: Project, tasks: Task[]) => tasksOf(p, tasks).find((t) => !t.done);
