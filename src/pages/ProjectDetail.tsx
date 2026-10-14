@@ -27,6 +27,7 @@ export default function ProjectDetail() {
 
   const own = tasksOf(p, tasks.items);
   const pct = progressOf(p, tasks.items);
+  const nextId = own.find((x) => !x.done)?.id; // étape à faire en premier
   const set = (patch: Partial<Project>) =>
     projects.update(p.id, patch.status ? { ...patch, completedAt: patch.status === "done" ? new Date().toISOString() : undefined } : patch);
   const touch = () => projects.update(p.id, {}); // met à jour « dernière modification »
@@ -102,6 +103,7 @@ export default function ProjectDetail() {
               {own.map((t, i) => (
                 <li key={t.id} className={`${card} flex items-center gap-2 px-3 py-1.5`}>
                   <input type="checkbox" checked={t.done} aria-label={`Terminée : ${t.title}`} onChange={async () => { if (await tasks.update(t.id, { done: !t.done })) touch(); }} />
+                  {t.id === nextId && <span className="shrink-0 rounded bg-accent/10 px-1.5 py-0.5 text-[10px] text-accent dark:bg-night-accent/15 dark:text-night-accent">Prochaine</span>}
                   <AutoText ariaLabel="Titre de l'étape" required className={`border-transparent bg-transparent ${t.done ? "line-through opacity-60" : ""}`} value={t.title}
                     onCommit={async (v) => { if (await tasks.update(t.id, { title: v.trim() })) touch(); }} />
                   <button className="px-1 text-muted disabled:opacity-30" disabled={i === 0} onClick={() => move(i, -1)} aria-label="Monter">↑</button>
