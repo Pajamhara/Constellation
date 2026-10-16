@@ -1,5 +1,3 @@
-
-Desktop · YML
 name: Application de bureau
 # Se lance quand vous publiez une release dont l'étiquette ressemble à v0.1.4
 on:
