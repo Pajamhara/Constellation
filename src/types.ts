@@ -27,7 +27,7 @@ export type ProjectStatus = "idea" | "todo" | "active" | "paused" | "done";
 export interface Project extends Base {
   name: string; description: string; status: ProjectStatus;
   progressMode: "auto" | "manual"; manualProgress: number;
-  goal?: string; notes: string; completedAt?: string; // renseignée quand le statut passe à « Terminé »
+  goal?: string; notes: string; tags?: string[]; completedAt?: string; // renseignée quand le statut passe à « Terminé »
 }
  
 export interface Task extends Base {
