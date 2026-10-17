@@ -31,7 +31,7 @@ export default function Ideas() {
   const convert = async (i: Idea) => {
     if (busy) return;
     setBusy(i.id);
-    const p = await projects.add({ name: i.title, description: i.description, status: "todo", progressMode: "auto", manualProgress: 0, notes: i.notes });
+    const p = await projects.add({ name: i.title, description: i.description, status: "todo", progressMode: "auto", manualProgress: 0, notes: i.notes, tags: i.tags });
     if (p && (await ideas.update(i.id, { convertedProjectId: p.id }))) navigate(`/projets/${p.id}`);
     setBusy(null);
   };
