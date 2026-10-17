@@ -4,7 +4,7 @@ import { PageHeader, ProgressBar, card } from "../components/ui";
 import { useCollection } from "../hooks/useCollection";
 import { formatDate, formatDay, ymd } from "../lib/format";
 import { nextTask, progressOf } from "../lib/progress";
-import { dateLabel, hoursOf, upcomingOccurrences } from "../lib/recurrence";
+import { byTime, dateLabel, expand, hoursOf, upcomingOccurrences } from "../lib/recurrence";
 import type { CalendarEvent, Idea, Project, Task } from "../types";
 
 function Section({ title, to, link, children }: { title: string; to: string; link: string; children: ReactNode }) {
@@ -28,8 +28,14 @@ export default function Dashboard() {
   const all = [events, projects, tasks, ideas];
   if (all.some((c) => c.loading)) return null;
 
-  const upcoming = upcomingOccurrences(events.items, ymd(new Date()), 5);
+  const now = new Date();
+  const todayKey = ymd(now);
+  const tomorrowKey = ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
+  const todayLabel = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" }).format(now);
+  const todayEvents = expand(events.items, todayKey, todayKey).sort(byTime); // y compris répétitions et événements en cours
+  const upcoming = upcomingOccurrences(events.items, tomorrowKey, 5); // à partir de demain : aujourd'hui a son propre bloc
   const active = projects.items.filter((p) => p.status === "active").sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const todo = active.map((p) => ({ p, next: nextTask(p, tasks.items) })).filter((x) => x.next).slice(0, 5);
   // Projets suivis = tous sauf les simples « idées » ; un projet terminé compte pour 100 %.
   const tracked = projects.items.filter((p) => p.status !== "idea");
   const pct = (p: Project) => (p.status === "done" ? 100 : progressOf(p, tasks.items));
@@ -40,6 +46,44 @@ export default function Dashboard() {
     <>
       <PageHeader title="Accueil" save={all.find((c) => c.save.kind === "error")?.save} />
       <div className="grid gap-4 sm:grid-cols-2">
+        <section className={`${card} p-4 sm:col-span-2`}>
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="font-medium">Aujourd'hui <span className="ml-1 text-sm font-normal text-muted dark:text-night-muted">{todayLabel}</span></h2>
+            <Link to="/calendrier" className="text-xs text-muted hover:text-accent dark:text-night-muted dark:hover:text-night-accent">Calendrier →</Link>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div>
+              <h3 className="mb-2 text-xs uppercase tracking-wide text-muted dark:text-night-muted">Événements</h3>
+              {todayEvents.length === 0 ? <Empty text="Rien de prévu aujourd'hui." /> : (
+                <ul className="space-y-2">
+                  {todayEvents.map(({ event: e, date, origDate }) => (
+                    <li key={e.id + origDate} className="flex items-center gap-3">
+                      <span className="h-7 w-1 rounded" style={{ background: e.color ?? "#2f5d8a" }} />
+                      <span className="text-sm"><span className="block font-medium">{e.recurrence ? "↻ " : ""}{e.title}</span>
+                        <span className="text-xs text-muted dark:text-night-muted">{e.endDate && e.endDate !== e.date ? dateLabel(e, date) : hoursOf(e) || "Toute la journée"}</span></span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <h3 className="mb-2 text-xs uppercase tracking-wide text-muted dark:text-night-muted">À faire ensuite</h3>
+              {todo.length === 0 ? <Empty text="Aucune étape en attente." /> : (
+                <ul className="space-y-2">
+                  {todo.map(({ p, next }) => (
+                    <li key={p.id}>
+                      <Link to={`/projets/${p.id}`} className="block text-sm">
+                        <span className="font-medium">{next!.title}</span>
+                        <span className="block text-xs text-muted dark:text-night-muted">{p.name}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </section>
+
         <section className={`${card} p-4 sm:col-span-2`}>
           <h2 className="mb-3 font-medium">Progression globale</h2>
           {tracked.length === 0 ? <Empty text="Créez un projet pour suivre votre avancement." /> : (
