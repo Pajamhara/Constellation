@@ -16,6 +16,7 @@ export default function Ideas() {
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  const [tag, setTag] = useState<string | null>(null);
   const [editing, setEditing] = useState<Idea | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const save = projects.save.kind === "error" ? projects.save : ideas.save;
@@ -36,7 +37,13 @@ export default function Ideas() {
   };
 
   const since = Date.now() - 30 * 864e5;
-  const list = ideas.items.filter((i) => filter === "all" || (filter === "high" ? i.priority === "high" : new Date(i.createdAt).getTime() >= since));
+  const counts = new Map<string, number>();
+  for (const i of ideas.items) for (const t of i.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
+  const tags = [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0], "fr"));
+  const activeTag = tag && counts.has(tag) ? tag : null; // se réinitialise si plus aucune idée n'a ce tag
+  const list = ideas.items
+    .filter((i) => filter === "all" || (filter === "high" ? i.priority === "high" : new Date(i.createdAt).getTime() >= since))
+    .filter((i) => !activeTag || i.tags.includes(activeTag));
 
   return (
     <>
@@ -48,6 +55,17 @@ export default function Ideas() {
       <select className={`${input} mb-4 w-auto`} value={filter} onChange={(e) => setFilter(e.target.value as Filter)} aria-label="Filtrer les idées">
         <option value="all">Toutes</option><option value="recent">Récentes (30 jours)</option><option value="high">Priorité élevée</option>
       </select>
+      {tags.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-1.5" role="group" aria-label="Filtrer par tag">
+          {tags.map(([t, n]) => (
+            <button key={t} aria-pressed={activeTag === t} onClick={() => setTag(activeTag === t ? null : t)}
+              className={`rounded-full border px-2.5 py-0.5 text-xs ${activeTag === t ? "border-accent bg-accent/10 text-accent dark:border-night-accent dark:bg-night-accent/15 dark:text-night-accent" : "border-line text-muted dark:border-night-line dark:text-night-muted"}`}>
+              #{t} <span className="opacity-60">{n}</span>
+            </button>
+          ))}
+          {activeTag && <button onClick={() => setTag(null)} className="px-1 text-xs text-muted underline dark:text-night-muted">Tout afficher</button>}
+        </div>
+      )}
 
       {ideas.loading ? null : list.length === 0 ? (
         <EmptyState title={ideas.items.length ? "Aucune idée dans ce filtre" : "Aucune idée pour l'instant"} hint="Notez-en une : une ligne suffit, vous la développerez plus tard." />
@@ -60,7 +78,7 @@ export default function Ideas() {
                 <div className="flex flex-wrap gap-1.5 text-xs">
                   {i.convertedProjectId && <span className="rounded bg-emerald-500/15 px-2 py-0.5 text-emerald-700 dark:text-emerald-300">Converti en projet</span>}
                   {i.priority && <span className="rounded bg-paper px-2 py-0.5 dark:bg-night">Priorité {PRIO[i.priority].toLowerCase()}</span>}
-                  {i.tags.map((t) => <span key={t} className="rounded bg-paper px-2 py-0.5 dark:bg-night">#{t}</span>)}
+                  {i.tags.map((t) => <button key={t} onClick={() => setTag(t)} className="rounded bg-paper px-2 py-0.5 hover:text-accent dark:bg-night dark:hover:text-night-accent" title="Filtrer sur ce tag">#{t}</button>)}
                 </div>
               </div>
               {i.description && <p className="mt-1 line-clamp-2 text-sm text-muted dark:text-night-muted">{i.description}</p>}
