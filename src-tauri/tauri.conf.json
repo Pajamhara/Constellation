@@ -3,7 +3,7 @@
   "productName": "Constellation",
   "mainBinaryName": "Constellation",
   "version": "0.1.0",
-  "identifier": "fr.tableaudebord.app",
+  "identifier": "io.github.pajamhara.constellation",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:5173",
@@ -17,7 +17,8 @@
         "width": 1100,
         "height": 760,
         "minWidth": 380,
-        "minHeight": 560
+        "minHeight": 560,
+        "dragDropEnabled": false
       }
     ],
     "security": {
