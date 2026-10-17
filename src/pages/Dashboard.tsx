@@ -4,7 +4,7 @@ import { PageHeader, ProgressBar, card } from "../components/ui";
 import { useCollection } from "../hooks/useCollection";
 import { formatDate, formatDay, ymd } from "../lib/format";
 import { nextTask, progressOf } from "../lib/progress";
-import { hoursOf, upcomingOccurrences } from "../lib/recurrence";
+import { dateLabel, hoursOf, upcomingOccurrences } from "../lib/recurrence";
 import type { CalendarEvent, Idea, Project, Task } from "../types";
 
 function Section({ title, to, link, children }: { title: string; to: string; link: string; children: ReactNode }) {
@@ -57,7 +57,7 @@ export default function Dashboard() {
                 <li key={e.id + date} className="flex items-center gap-3">
                   <span className="h-7 w-1 rounded" style={{ background: e.color ?? "#2f5d8a" }} />
                   <span className="text-sm"><span className="block font-medium">{e.recurrence ? "↻ " : ""}{e.title}</span>
-                    <span className="text-xs text-muted dark:text-night-muted">{formatDay(date)} {hoursOf(e)}</span></span>
+                    <span className="text-xs text-muted dark:text-night-muted">{dateLabel(e, date)} {hoursOf(e)}</span></span>
                 </li>
               ))}
             </ul>
