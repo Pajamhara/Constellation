@@ -22,6 +22,14 @@ export default function Calendar() {
   const [editing, setEditing] = useState<{ event?: CalendarEvent; date: string; occurrence?: string } | null>(null);
   const [choosing, setChoosing] = useState<Occurrence | null>(null);
   const open = (o: Occurrence) => (o.base.recurrence ? setChoosing(o) : setEditing({ event: o.base, date: o.base.date }));
+  // Copie l'événement (sans les exceptions d'une série) puis l'ouvre pour changer la date, etc.
+  const duplicate = async (ev: CalendarEvent) => {
+    const { id: _i, createdAt: _c, updatedAt: _u, ownerId: _o, ...rest } = ev;
+    const r = rest.recurrence;
+    const recurrence = r ? { weekdays: r.weekdays, intervalWeeks: r.intervalWeeks, until: r.until } : undefined;
+    const copy = await add({ ...rest, recurrence, title: `${ev.title} (copie)` });
+    if (copy) setEditing({ event: copy, date: copy.date });
+  };
   const today = ymd(new Date());
 
   const cells = useMemo(() => {
@@ -152,16 +160,17 @@ export default function Calendar() {
               return ev ? update(ev.id, d) : !!(await add(d));
             }}
             onDelete={ev ? () => (occ && r ? patchSeries({ ...r, skip: [...(r.skip ?? []), occ], overrides: withoutOverride(r.overrides) }) : remove(ev.id)) : undefined}
-            onRestore={ev && occ && r?.overrides?.[occ] ? () => patchSeries({ ...r, overrides: withoutOverride(r.overrides) }) : undefined} />
+            onRestore={ev && occ && r?.overrides?.[occ] ? () => patchSeries({ ...r, overrides: withoutOverride(r.overrides) }) : undefined}
+            onDuplicate={ev && !occ ? () => duplicate(ev) : undefined} />
         );
       })()}
     </>
   );
 }
 
-function EventModal({ event, date, occurrence, onSave, onDelete, onRestore, onClose }: {
+function EventModal({ event, date, occurrence, onSave, onDelete, onRestore, onDuplicate, onClose }: {
   event?: CalendarEvent; date: string; occurrence?: string; onSave: (d: Draft) => Promise<boolean>;
-  onDelete?: () => Promise<boolean>; onRestore?: () => Promise<boolean>; onClose: () => void;
+  onDelete?: () => Promise<boolean>; onRestore?: () => Promise<boolean>; onDuplicate?: () => void; onClose: () => void;
 }) {
   // En mode « une seule date », on part de la série + les modifications déjà faites sur cette date.
   const ov = occurrence ? event?.recurrence?.overrides?.[occurrence] : undefined;
@@ -255,6 +264,7 @@ function EventModal({ event, date, occurrence, onSave, onDelete, onRestore, onCl
                   if ((await ask(msg)) && (await onDelete())) onClose();
                 }}>{occurrence ? "Supprimer cette date" : event?.recurrence ? "Supprimer la série" : "Supprimer"}</button>
               {onRestore && <button type="button" className="text-sm text-muted dark:text-night-muted" onClick={async () => { if (await onRestore()) onClose(); }}>Rétablir</button>}
+              {onDuplicate && <button type="button" className="text-sm text-muted dark:text-night-muted" onClick={onDuplicate}>Dupliquer</button>}
             </div>
           ) : <span />}
           <div className="flex gap-2">
