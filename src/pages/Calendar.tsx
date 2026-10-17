@@ -3,14 +3,14 @@ import { ask } from "../components/Confirm";
 import { EmptyState, Modal, PageHeader, btn, card, input, label } from "../components/ui";
 import { useCollection } from "../hooks/useCollection";
 import { formatDay, ymd } from "../lib/format";
-import { WD_LONG, byTime, expand, repeatLabel, upcomingOccurrences, weekdayMon, type Occurrence } from "../lib/recurrence";
+import { WD_LONG, byTime, dateLabel, expand, hoursOf, repeatLabel, upcomingOccurrences, weekdayMon, type Occurrence } from "../lib/recurrence";
 import type { CalendarEvent, Override, Recurrence } from "../types";
 
 const COLORS = ["#2f5d8a", "#3f7d5a", "#b7791f", "#b4493d", "#6b5aa6"];
 const DAYS = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."];
 const monthFmt = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" });
 type Draft = Omit<CalendarEvent, "id" | "createdAt" | "updatedAt" | "ownerId">;
-const hours = (e: CalendarEvent) => (e.startTime ? e.startTime + (e.endTime ? `–${e.endTime}` : "") : "");
+const hours = hoursOf;
 
 const weekFmt = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
@@ -76,7 +76,7 @@ export default function Calendar() {
                   {evs.slice(0, 3).map(({ event: e, date, origDate, base }) => (
                     <button key={e.id + origDate} onClick={(ev) => { ev.stopPropagation(); open({ event: e, date, origDate, base }); }}
                       className="block w-full truncate rounded px-1 text-left text-[11px] text-white" style={{ background: e.color ?? COLORS[0] }}>
-                      {e.recurrence ? "↻ " : ""}{e.startTime ? `${e.startTime} ` : ""}{e.title}
+                      {e.recurrence ? "↻ " : ""}{e.endDate && date !== e.date ? "↳ " : e.startTime ? `${e.startTime} ` : ""}{e.title}
                     </button>
                   ))}
                   {evs.length > 3 && <span className="px-1 text-[11px] text-muted dark:text-night-muted">+{evs.length - 3}</span>}
@@ -102,7 +102,7 @@ export default function Calendar() {
                     <button key={e.id + origDate} onClick={(ev) => { ev.stopPropagation(); open({ event: e, date, origDate, base }); }}
                       className="block w-full rounded border-l-4 bg-paper px-2 py-1 text-left text-xs dark:bg-night" style={{ borderLeftColor: e.color ?? COLORS[0] }}>
                       {hours(e) && <span className="block text-muted dark:text-night-muted">{hours(e)}</span>}
-                      <span className="font-medium">{e.recurrence ? "↻ " : ""}{e.title}</span>
+                      <span className="font-medium">{e.endDate && date !== e.date ? "↳ " : e.recurrence ? "↻ " : ""}{e.title}</span>
                     </button>
                   ))}
                 </div>
@@ -123,7 +123,7 @@ export default function Calendar() {
                 <span className="h-8 w-1 rounded" style={{ background: e.color ?? COLORS[0] }} />
                 <span className="flex-1">
                   <span className="block text-sm font-medium">{e.title}</span>
-                  <span className="text-xs text-muted dark:text-night-muted">{formatDay(date)} {hours(e)}{e.recurrence ? ` · ↻ ${repeatLabel(e.recurrence)}` : ""}</span>
+                  <span className="text-xs text-muted dark:text-night-muted">{dateLabel(e, date)} {hours(e)}{e.recurrence ? ` · ↻ ${repeatLabel(e.recurrence)}` : ""}</span>
                 </span>
               </button>
             </li>
@@ -172,6 +172,7 @@ function EventModal({ event, date, occurrence, onSave, onDelete, onRestore, onCl
   const [end, setEnd] = useState(src?.endTime ?? "");
   const [desc, setDesc] = useState(src?.description ?? "");
   const [color, setColor] = useState(src?.color ?? COLORS[0]);
+  const [endDay, setEndDay] = useState(event?.endDate ?? "");
   const [repeat, setRepeat] = useState(!occurrence && Boolean(event?.recurrence));
   const [wd, setWd] = useState<number[]>(event?.recurrence?.weekdays ?? []);
   const [every, setEvery] = useState<1 | 2>(event?.recurrence?.intervalWeeks ?? 1);
@@ -182,13 +183,15 @@ function EventModal({ event, date, occurrence, onSave, onDelete, onRestore, onCl
     e.preventDefault();
     if (!title.trim()) return setErr("Le titre est obligatoire.");
     if (!day) return setErr("La date est obligatoire.");
-    if (start && end && end < start) return setErr("L'heure de fin précède l'heure de début.");
+    const multi = !repeat && !occurrence && endDay > day; // sur plusieurs jours
+    if (endDay && !repeat && !occurrence && endDay < day) return setErr("La date de fin précède la date de début.");
+    if (start && end && end < start && !multi) return setErr("L'heure de fin précède l'heure de début.");
     if (repeat && wd.length === 0) return setErr("Choisissez au moins un jour de répétition.");
     if (repeat && until && until < day) return setErr("La fin de la répétition précède la date de l'événement.");
     const recurrence = repeat ? { weekdays: [...wd].sort(), intervalWeeks: every, until: until || undefined } : undefined;
     const ok = await onSave(occurrence
       ? { title: title.trim(), date: day, startTime: start, endTime: end, description: desc.trim(), color } // "" = valeur effacée pour cette date
-      : { title: title.trim(), date: day, startTime: start || undefined, endTime: end || undefined, description: desc.trim() || undefined, color, recurrence });
+      : { title: title.trim(), date: day, endDate: multi ? endDay : undefined, startTime: start || undefined, endTime: end || undefined, description: desc.trim() || undefined, color, recurrence });
     if (ok) onClose(); else setErr("L'enregistrement a échoué. Vos données sont conservées dans ce formulaire.");
   };
 
@@ -197,11 +200,17 @@ function EventModal({ event, date, occurrence, onSave, onDelete, onRestore, onCl
       <form onSubmit={submit} className="space-y-3">
         {occurrence && <p className="text-xs text-muted dark:text-night-muted">Les autres dates de la série ne sont pas modifiées.</p>}
         <div><label className={label} htmlFor="ev-t">Titre</label><input id="ev-t" autoFocus className={input} value={title} onChange={(e) => setTitle(e.target.value)} /></div>
-        <div className="grid grid-cols-3 gap-2">
-          <div><label className={label} htmlFor="ev-d">Date</label><input id="ev-d" type="date" className={input} value={day} onChange={(e) => setDay(e.target.value)} /></div>
-          <div><label className={label} htmlFor="ev-s">Début</label><input id="ev-s" type="time" className={input} value={start} onChange={(e) => setStart(e.target.value)} /></div>
-          <div><label className={label} htmlFor="ev-e">Fin</label><input id="ev-e" type="time" className={input} value={end} onChange={(e) => setEnd(e.target.value)} /></div>
+        <div className={`grid gap-2 ${!repeat && !occurrence ? "grid-cols-2" : "grid-cols-1"}`}>
+          <div><label className={label} htmlFor="ev-d">{occurrence ? "Date" : "Date de début"}</label><input id="ev-d" type="date" className={input} value={day} onChange={(e) => { setDay(e.target.value); if (endDay && endDay < e.target.value) setEndDay(e.target.value); }} /></div>
+          {!repeat && !occurrence && (
+            <div><label className={label} htmlFor="ev-ed">Date de fin (facultatif)</label><input id="ev-ed" type="date" className={input} min={day} value={endDay} onChange={(e) => setEndDay(e.target.value)} /></div>
+          )}
         </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div><label className={label} htmlFor="ev-s">Heure de début</label><input id="ev-s" type="time" className={input} value={start} onChange={(e) => setStart(e.target.value)} /></div>
+          <div><label className={label} htmlFor="ev-e">Heure de fin</label><input id="ev-e" type="time" className={input} value={end} onChange={(e) => setEnd(e.target.value)} /></div>
+        </div>
+        {!repeat && !occurrence && endDay > day && <p className="text-xs text-muted dark:text-night-muted">Sur plusieurs jours : l'heure de début vaut pour le premier jour, l'heure de fin pour le dernier.</p>}
         <div><label className={label} htmlFor="ev-n">Description</label><textarea id="ev-n" rows={3} className={input} value={desc} onChange={(e) => setDesc(e.target.value)} /></div>
         <div className="flex gap-2" role="radiogroup" aria-label="Couleur">
           {COLORS.map((c) => (
