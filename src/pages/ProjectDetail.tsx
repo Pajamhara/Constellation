@@ -4,6 +4,7 @@ import { ask } from "../components/Confirm";
 import { AutoText, EmptyState, PageHeader, ProgressBar, SaveStatus, btn, card, input, label } from "../components/ui";
 import { useCollection } from "../hooks/useCollection";
 import { formatDate, formatDateTime } from "../lib/format";
+import { parseTags } from "../lib/tags";
 import { STATUS_LABEL, progressOf, tasksOf } from "../lib/progress";
 import type { Project, ProjectStatus, Task } from "../types";
 
@@ -60,7 +61,7 @@ export default function ProjectDetail() {
   };
   // Copie du projet (étapes décochées) : pratique comme modèle.
   const duplicate = async () => {
-    const copy = await projects.add({ name: `${p.name} (copie)`, description: p.description, status: "todo", progressMode: p.progressMode, manualProgress: 0, goal: p.goal, notes: p.notes });
+    const copy = await projects.add({ name: `${p.name} (copie)`, description: p.description, status: "todo", progressMode: p.progressMode, manualProgress: 0, goal: p.goal, notes: p.notes, tags: p.tags });
     if (!copy) return;
     for (let i = 0; i < own.length; i++)
       if (!(await tasks.add({ projectId: copy.id, title: own[i].title, done: false, position: i }))) return;
@@ -90,6 +91,7 @@ export default function ProjectDetail() {
             </select>
           </div>
           <div><label className={label}>Objectif</label><AutoText ariaLabel="Objectif" value={p.goal ?? ""} onCommit={(v) => set({ goal: v })} /></div>
+          <div className="sm:col-span-2"><label className={label}>Tags (séparés par des virgules)</label><AutoText ariaLabel="Tags" placeholder="appli, perso, voyage" value={(p.tags ?? []).join(", ")} onCommit={(v) => set({ tags: parseTags(v) })} /></div>
         </div>
         <div className="flex flex-wrap gap-2">
           {p.status === "paused"
