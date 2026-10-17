@@ -14,6 +14,8 @@ export default function ProjectDetail() {
   const tasks = useCollection<Task>("tasks");
   const [newTask, setNewTask] = useState("");
   const [manual, setManual] = useState<number | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null); // étape en cours de déplacement
+  const [overId, setOverId] = useState<string | null>(null); // étape survolée
 
   if (projects.loading || tasks.loading) return null;
   const p = projects.items.find((x) => x.id === id);
@@ -45,6 +47,24 @@ export default function ProjectDetail() {
     await tasks.update(a.id, { position: b.position });
     await tasks.update(b.id, { position: a.position });
     touch();
+  };
+  // Glisser-déposer : l'étape déplacée prend la place de l'étape visée, puis on renumérote.
+  const reorder = async (fromId: string, toId: string) => {
+    const from = own.findIndex((t) => t.id === fromId), to = own.findIndex((t) => t.id === toId);
+    if (from < 0 || to < 0 || from === to) return;
+    const next = [...own];
+    next.splice(to, 0, next.splice(from, 1)[0]);
+    for (let i = 0; i < next.length; i++)
+      if (next[i].position !== i && !(await tasks.update(next[i].id, { position: i }))) return;
+    touch();
+  };
+  // Copie du projet (étapes décochées) : pratique comme modèle.
+  const duplicate = async () => {
+    const copy = await projects.add({ name: `${p.name} (copie)`, description: p.description, status: "todo", progressMode: p.progressMode, manualProgress: 0, goal: p.goal, notes: p.notes });
+    if (!copy) return;
+    for (let i = 0; i < own.length; i++)
+      if (!(await tasks.add({ projectId: copy.id, title: own[i].title, done: false, position: i }))) return;
+    navigate(`/projets/${copy.id}`);
   };
   const removeProject = async () => {
     if (!(await ask(`Supprimer le projet « ${p.name} » et ses ${own.length} étape(s) ?`))) return;
@@ -101,7 +121,14 @@ export default function ProjectDetail() {
           {own.length === 0 ? <EmptyState title="Aucune étape" hint="Découpez le projet en petites étapes : la progression se calculera toute seule." /> : (
             <ul className="space-y-1.5">
               {own.map((t, i) => (
-                <li key={t.id} className={`${card} flex items-center gap-2 px-3 py-1.5`}>
+                <li key={t.id}
+                  onDragOver={(e) => { if (dragId) { e.preventDefault(); setOverId(t.id); } }}
+                  onDrop={(e) => { e.preventDefault(); if (dragId) reorder(dragId, t.id); setDragId(null); setOverId(null); }}
+                  className={`${card} flex items-center gap-2 px-3 py-1.5 ${dragId === t.id ? "opacity-40" : ""} ${overId === t.id && dragId !== t.id ? "border-t-2 border-t-accent dark:border-t-night-accent" : ""}`}>
+                  <span draggable aria-hidden="true" title="Glisser pour réordonner"
+                    onDragStart={(e) => { setDragId(t.id); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", t.id); const li = e.currentTarget.closest("li"); if (li) e.dataTransfer.setDragImage(li, 16, 16); }}
+                    onDragEnd={() => { setDragId(null); setOverId(null); }}
+                    className="cursor-grab select-none px-0.5 text-muted active:cursor-grabbing dark:text-night-muted">⋮⋮</span>
                   <input type="checkbox" checked={t.done} aria-label={`Terminée : ${t.title}`} onChange={async () => { if (await tasks.update(t.id, { done: !t.done })) touch(); }} />
                   {t.id === nextId && <span className="shrink-0 rounded bg-accent/10 px-1.5 py-0.5 text-[10px] text-accent dark:bg-night-accent/15 dark:text-night-accent">Prochaine</span>}
                   <AutoText ariaLabel="Titre de l'étape" required className={`border-transparent bg-transparent ${t.done ? "line-through opacity-60" : ""}`} value={t.title}
@@ -119,7 +146,10 @@ export default function ProjectDetail() {
 
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4 text-xs text-muted dark:border-night-line dark:text-night-muted">
           <span>Créé le {formatDate(p.createdAt)} · modifié le {formatDateTime(p.updatedAt)}</span>
-          <button className="text-sm text-red-600 dark:text-red-400" onClick={removeProject}>Supprimer le projet</button>
+          <span className="flex items-center gap-4">
+            <button className="text-sm text-muted dark:text-night-muted" onClick={duplicate}>Dupliquer le projet</button>
+            <button className="text-sm text-red-600 dark:text-red-400" onClick={removeProject}>Supprimer le projet</button>
+          </span>
         </footer>
       </div>
     </>
